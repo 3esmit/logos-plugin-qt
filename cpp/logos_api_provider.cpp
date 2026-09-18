@@ -14,8 +14,16 @@
 LogosAPIProvider::LogosAPIProvider(const QString& module_name,
                                    LogosTransportSet transports,
                                    QObject *parent)
+    : LogosAPIProvider(module_name, QString{}, std::move(transports), parent)
+{
+}
+
+LogosAPIProvider::LogosAPIProvider(const QString& module_name,
+                                   const QString& instance_id,
+                                   LogosTransportSet transports,
+                                   QObject *parent)
     : QObject(parent)
-    , m_registryUrl(LogosInstance::id(module_name))
+    , m_registryUrl(LogosInstance::id(module_name, instance_id))
     , m_moduleProxy(nullptr)
     , m_qtProviderObject(nullptr)
 {

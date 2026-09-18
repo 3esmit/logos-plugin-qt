@@ -43,6 +43,13 @@ public:
     explicit LogosAPIProvider(const QString& module_name,
                               LogosTransportSet transports = {},
                               QObject *parent = nullptr);
+
+    // Explicit runtime-instance variant. The logical module name remains the
+    // public API identity; `instance_id` selects its registry endpoint.
+    LogosAPIProvider(const QString& module_name,
+                     const QString& instance_id,
+                     LogosTransportSet transports = {},
+                     QObject *parent = nullptr);
     // Back-compat overload
     LogosAPIProvider(const QString& module_name, QObject *parent)
         : LogosAPIProvider(module_name, LogosTransportSet{}, parent) {}

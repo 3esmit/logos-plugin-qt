@@ -17,7 +17,9 @@
     # since the cdylib glue's forwarding is guarded on MINOR >= 3. That branch
     # has merged (logos-protocol#59): master is 0.4.0, so the guard opens.
     logos-protocol = {
-      url = "github:logos-co/logos-protocol";
+      # The maintained fork carries the additive target-instance constructors
+      # consumed by capability-module while upstream catches up.
+      url = "github:3esmit/logos-protocol?rev=3f307064aea1a7a6747f0374b8216c0549d1aceb";
       inputs.logos-nix.follows = "logos-nix";
     };
     # The canonical LIDL frontend logos-qt-host-generator parses contracts with.
@@ -225,6 +227,14 @@
         # oracle in this repo for the rule the multi emission is built around --
         # a scope open on one thread is invisible on another.
         caller-invokable = import ./tests/test-caller-invokable.nix {
+          inherit pkgs;
+          qtHost = self.packages.${system}.logos-qt-host;
+        };
+
+        # Explicit target-instance routing must keep default and scoped
+        # clients/provider registries distinct while preserving empty-instance
+        # compatibility.
+        scoped-instance = import ./tests/test-scoped-instance.nix {
           inherit pkgs;
           qtHost = self.packages.${system}.logos-qt-host;
         };
