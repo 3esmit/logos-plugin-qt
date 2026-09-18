@@ -35,6 +35,21 @@ LogosAPI::LogosAPI(const QString& module_name,
 }
 
 LogosAPI::LogosAPI(const QString& module_name,
+                   const QString& instance_id,
+                   LogosTransportSet transports,
+                   QObject *parent)
+    : QObject(parent)
+    , m_module_name(module_name)
+    , m_provider(nullptr)
+    , m_token_manager(nullptr)
+{
+    m_provider = new LogosAPIProvider(m_module_name, instance_id,
+                                      std::move(transports), this);
+    m_token_manager = &TokenManager::forIdentity(m_module_name);
+    qRegisterMetaType<LogosResult>("LogosResult");
+}
+
+LogosAPI::LogosAPI(const QString& module_name,
                    TokenManager* token_store,
                    LogosTransportSet transports,
                    QObject *parent)
@@ -120,7 +135,8 @@ LogosAPIClient* LogosAPI::getClient(const QString& target_module) const
     // process-global default" — the explicit-transport overload below
     // is the single resolution path. Mode-awareness lives in the
     // factory, so this delegation preserves Mock/Local semantics.
-    return getClient(target_module, LogosTransportConfigGlobal::getDefault());
+    return getClient(target_module, QString{},
+                     LogosTransportConfigGlobal::getDefault());
 }
 
 LogosAPIClient* LogosAPI::getClient(const std::string& target_module) const
@@ -129,6 +145,20 @@ LogosAPIClient* LogosAPI::getClient(const std::string& target_module) const
 }
 
 LogosAPIClient* LogosAPI::getClient(const QString& target_module,
+                                    const LogosTransportConfig& transport) const
+{
+    return getClient(target_module, QString{}, transport);
+}
+
+LogosAPIClient* LogosAPI::getClient(const QString& target_module,
+                                    const QString& target_instance_id) const
+{
+    return getClient(target_module, target_instance_id,
+                     LogosTransportConfigGlobal::getDefault());
+}
+
+LogosAPIClient* LogosAPI::getClient(const QString& target_module,
+                                    const QString& target_instance_id,
                                     const LogosTransportConfig& transport) const
 {
     // Create the client (and its consumers + transport replicas) on this
@@ -156,7 +186,8 @@ LogosAPIClient* LogosAPI::getClient(const QString& target_module,
     // that care register the capability_module transport once via
     // setCapabilityModuleTransport() and the rest is plumbing.
     const LogosAPIClientCacheKey key{
-        target_module, LogosModeConfig::getMode(), transport};
+        target_module, LogosModeConfig::getMode(), transport,
+        target_instance_id};
     auto it = m_clients.constFind(key);
     if (it != m_clients.constEnd()) return it.value();
 
@@ -168,6 +199,7 @@ LogosAPIClient* LogosAPI::getClient(const QString& target_module,
     LogosAPIClient* client = new LogosAPIClient(
         target_module, m_module_name, m_token_manager,
         transport, capabilityTransport,
+        target_instance_id,
         const_cast<LogosAPI*>(this));
     m_clients.insert(key, client);
     return client;
